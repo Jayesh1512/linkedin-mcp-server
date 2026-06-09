@@ -58,7 +58,9 @@ CURRENT_REF=$(git symbolic-ref -q --short HEAD || git rev-parse HEAD)
 # Fetch the PR head into FETCH_HEAD only and check it out as a detached HEAD.
 # Skipping a named local branch avoids clobbering a maintainer's existing
 # `pr-$PR` work and removes the cleanup-time `git branch -D` foot-gun.
-git fetch origin "pull/$PR/head"
+# Guard the fetch: without it a network/auth failure or deleted pull ref would
+# leave a stale FETCH_HEAD and the verdict would run against the wrong commit.
+git fetch origin "pull/$PR/head" || { echo "git fetch for PR #$PR failed, aborting before checkout." >&2; exit 1; }
 PR_SHA=$(git rev-parse FETCH_HEAD)
 git checkout --detach "$PR_SHA"
 
